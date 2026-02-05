@@ -10,9 +10,10 @@ class ApiLogCreate(BaseModel):
     method: str
     status_code: int
     response_time: float
-
-#creamos una clase ApiLogResponse que define el esquema para la respuesta al crear o recuperar un log de API
-#hereda de ApiLogCreate para reutilizar los campos definidos allí
+'''
+creamos una clase ApiLogResponse que define el esquema para la respuesta al crear o recuperar un log de API
+hereda de ApiLogCreate para reutilizar los campos definidos allí
+'''
 class ApiLogResponse(ApiLogCreate):
     id: int
     timestamp: datetime
