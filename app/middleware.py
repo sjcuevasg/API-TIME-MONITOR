@@ -10,6 +10,7 @@ from .database import SessionLocal
 #importa el modelo ApiLog que representa la tabla de logs en la base de datos
 from .models import ApiLog
 
+from .services.logger_service import save_api_log
 #rutas que no se deben loguear ni tener en cuenta para medir tiempo de respuesta
 EXCLUDED_PATHS = ["/docs", "/redoc", "/openapi.json"]
 
@@ -23,7 +24,7 @@ recibe call_next que es una funcion que procesa la solicitud y devuelve la respu
 async def log_requests(request: Request, call_next):
     #si la ruta de la solicitud está en las rutas excluidas, no se loguea ni mide tiempo solo siguie el flujo normal
     if request.url.path in EXCLUDED_PATHS:
-    return await call_next(request)
+        return await call_next(request)
 
 
     start_time = time.time()
@@ -40,21 +41,18 @@ async def log_requests(request: Request, call_next):
             status_code=500,
             content={"detail": "Internal Server Error"},
         )
+
     #calcula el tiempo que tardo en procesarse la solicitud
     process_time = (time.time() - start_time) * 1000
-    #crea sesion de base de datos
-    db = SessionLocal()
-    #intenta crear un nuevo log en la base de datos
-    try:
-        log = ApiLog(
-            endpoint=request.url.path,
-            method=request.method,
-            status_code=response.status_code,
-            response_time=process_time
-        )
-        db.add(log)
-        db.commit()
-    finally:
-        db.close()
+
+    #objeto con los datos del log que se guardara en la base de datos, se llena con los datos de la solicitud y el tiempo de respuesta
+    log_data = {
+    "endpoint": request.url.path,
+    "method": request.method,
+    "status_code": status_code,
+    "response_time": process_time
+    }
+    #llama la funcion save_api_log para guardar el log en la base de datos, le pasa el objeto con los datos del log
+    save_api_log(log_data)
     #devuelve la respuesta procesada
     return response
