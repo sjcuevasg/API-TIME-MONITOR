@@ -2,13 +2,11 @@
 import time
 
 #importa Request de fastapi, representa la solicitud HTTP entrante
-from fastapi import Request
+from fastapi import Request , BackgroundTasks
+from starlette.responses import JSONResponse
 
-#importa SessionLocal para manejar las sesiones de la base de datos
-from .database import SessionLocal
 
-#importa el modelo ApiLog que representa la tabla de logs en la base de datos
-from .models import ApiLog
+
 
 from .services.logger_service import save_api_log
 #rutas que no se deben loguear ni tener en cuenta para medir tiempo de respuesta
@@ -21,7 +19,7 @@ funcion del middleware para registrar las solicitudes entrantes
 recibe la variable request de tipo request, esta se encarga de representar la solicitud HTTP entrante
 recibe call_next que es una funcion que procesa la solicitud y devuelve la respuesta 
 '''
-async def log_requests(request: Request, call_next):
+async def log_requests(request: Request, call_next , background_tasks: BackgroundTasks):
     #si la ruta de la solicitud está en las rutas excluidas, no se loguea ni mide tiempo solo siguie el flujo normal
     if request.url.path in EXCLUDED_PATHS:
         return await call_next(request)
@@ -35,6 +33,7 @@ async def log_requests(request: Request, call_next):
     #si no capturamos la excepcion se perderia el logueo de la solicitud en caso de error y se crashearia la app
     try:
         response = await call_next(request)
+        status_code = response.status_code
     except Exception as e:
         status_code = 500
         response = JSONResponse(  
@@ -51,8 +50,11 @@ async def log_requests(request: Request, call_next):
     "method": request.method,
     "status_code": status_code,
     "response_time": process_time
+    
     }
+
+    #utiliza background tasks para guardar el log de manera asincrona y no bloquear la respuesta al cliente
     #llama la funcion save_api_log para guardar el log en la base de datos, le pasa el objeto con los datos del log
-    save_api_log(log_data)
+    background_tasks.add_task(save_api_log, log_data)
     #devuelve la respuesta procesada
     return response
