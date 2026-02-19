@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from datetime import datetime
-from .database import Base
+from database import Base
 '''
 creamos la clase ApiLog que sirve como modelo de base de datos para almacenar los logs de la API
 hereda de la clase Base definida en database.py

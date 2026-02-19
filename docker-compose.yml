@@ -1,36 +1,15 @@
 version: "3.9"
 
 services:
-
-  api:
-    build: .
-    container_name: api-monitor-app
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
+  mysql:
+    image: mysql:8
     env_file:
       - .env
-    depends_on:
-      - mysql
-
-  mysql:
-    image: mysql:8.0
-    container_name: api-monitor-mysql
-    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-volumes:
-  mysql_data:
-
 
   kafka:
     image: bitnami/kafka:latest
@@ -46,3 +25,26 @@ volumes:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
+
+  consumer:
+    build: ./consumer
+    container_name: api-log-consumer
+    depends_on:
+      - kafka
+      - mysql
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    env_file:
+      - .env
+
+  producer:
+    build: ./producer
+    container_name: api-log-producer
+    depends_on:
+      - kafka 
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"

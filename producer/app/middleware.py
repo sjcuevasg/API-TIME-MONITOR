@@ -2,32 +2,23 @@
 import time
 
 #importa Request de fastapi, representa la solicitud HTTP entrante
+
 from fastapi import Request , BackgroundTasks
 from starlette.responses import JSONResponse
-
-
-
-
-from .services.logger_service import save_api_log
+from .messaging.kafka_producer import publish_event
+from .schemas import ApiLogCreate
 #rutas que no se deben loguear ni tener en cuenta para medir tiempo de respuesta
 EXCLUDED_PATHS = ["/docs", "/redoc", "/openapi.json"]
-
-
-
 '''
 funcion del middleware para registrar las solicitudes entrantes
 recibe la variable request de tipo request, esta se encarga de representar la solicitud HTTP entrante
 recibe call_next que es una funcion que procesa la solicitud y devuelve la respuesta 
 '''
-async def log_requests(request: Request, call_next , background_tasks: BackgroundTasks):
+async def log_requests(request: Request, call_next , response_model= ApiLogCreate):
     #si la ruta de la solicitud está en las rutas excluidas, no se loguea ni mide tiempo solo siguie el flujo normal
     if request.url.path in EXCLUDED_PATHS:
         return await call_next(request)
-
-
     start_time = time.time()
-
-    
     #espera que siga el procesamiento de la solicitud, flujo normal
     #si hay un error durante el procesamiento, captura la excepcion y crea una respuesta de error 500 y guarda el log igualmente
     #si no capturamos la excepcion se perderia el logueo de la solicitud en caso de error y se crashearia la app
@@ -49,12 +40,8 @@ async def log_requests(request: Request, call_next , background_tasks: Backgroun
     "endpoint": request.url.path,
     "method": request.method,
     "status_code": status_code,
-    "response_time": process_time
-    
+    "response_time": process_time 
     }
-
-    #utiliza background tasks para guardar el log de manera asincrona y no bloquear la respuesta al cliente
-    #llama la funcion save_api_log para guardar el log en la base de datos, le pasa el objeto con los datos del log
-    background_tasks.add_task(save_api_log, log_data)
+    publish_event(log_data)
     #devuelve la respuesta procesada
     return response

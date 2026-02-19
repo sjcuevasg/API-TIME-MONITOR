@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from sqlalchemy.orm import Session
 #importa el middleware de logueo de solicitudes
 from .middleware import log_requests
@@ -6,9 +6,6 @@ from .middleware import log_requests
 
 from .database import SessionLocal, engine, Base
 from . import models, schemas
-
-
-Base.metadata.create_all(bind=engine)
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
 #funcion para obtener la sesión de base de datos e inicializarla
