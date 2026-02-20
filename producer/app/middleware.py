@@ -5,8 +5,8 @@ import time
 
 from fastapi import Request , BackgroundTasks
 from starlette.responses import JSONResponse
-from .messaging.kafka_producer import publish_event
-from .schemas import ApiLogCreate
+from messaging.kafka_producer import publish_event
+from schemas import ApiLogCreate
 #rutas que no se deben loguear ni tener en cuenta para medir tiempo de respuesta
 EXCLUDED_PATHS = ["/docs", "/redoc", "/openapi.json"]
 '''

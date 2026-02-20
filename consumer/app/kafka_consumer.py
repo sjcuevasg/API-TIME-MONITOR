@@ -11,15 +11,24 @@ KAFKA_BROKER= os.getenv("KAFKA_BROKER")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
 KAFKA_GROUP_ID = os.getenv("KAFKA_GROUP_ID")
 #se conecta al broker de Kafka en la dirección "kafka:9092" y se suscribe al topic "api_logs"
-consumer = KafkaConsumer(
-    KAFKA_TOPIC,
-    bootstrap_servers=KAFKA_BROKER,
-    #la función value_deserializer se encarga de convertir el mensaje recibido de bytes a un 
-    # diccionario de python utilizando json.loads, x representa
-    #x representa el mensaje recibido en bytes, se decodifica a utf-8 
-    value_deserializer=lambda x: json.loads(x.decode("utf-8")),
-    group_id=KAFKA_GROUP_ID
-)
+def get_consumer():
+    while True:
+        try:
+            consumer = KafkaConsumer(
+                KAFKA_TOPIC,
+                bootstrap_servers= KAFKA_BROKER,
+                #la función value_deserializer se encarga de convertir el mensaje recibido de bytes a un 
+                # diccionario de python utilizando json.loads, x representa
+                #x representa el mensaje recibido en bytes, se decodifica a utf-8 
+                value_deserializer=lambda x: json.loads(x.decode("utf-8")),
+                group_id=KAFKA_GROUP_ID
+            )
+            print("Conectado a Kafka exitosamente")
+            return consumer
+        except Exception as e:
+            print(f"Kafka no disponible, reintentando en 5s... {e}")
+            time.sleep(5)
+consumer = get_consumer()
 
 #inicia el loop del consumidor para escuchar los mensajes entrantes en el topic "api_logs".
     #cada vez que se recibe un mensaje, se llama a la función save_api_log para guardar el log en la base de datos

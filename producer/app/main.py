@@ -1,20 +1,8 @@
 from fastapi import FastAPI, Depends, Request
-from sqlalchemy.orm import Session
 #importa el middleware de logueo de solicitudes
-from .middleware import log_requests
-
-
-from .database import SessionLocal, engine, Base
-from . import models, schemas
+from middleware import log_requests
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
-#funcion para obtener la sesión de base de datos e inicializarla
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 '''
 registra el middleware de logueo de solicitudes en la aplicación FastAPI
@@ -57,7 +45,7 @@ async def health():
     Este metodo es unicamente para crear un log en la base de datos de manera manual
     no es utilizado en produccion ya que el logueo se hace automaticamente con el middleware
     ya que solo guardaria logs creados manualmente al hacer un post a /logs
-'''
+
 @app.post("/logs", response_model=schemas.ApiLogResponse)
 #recibe un log que debe ser de tipo ApiLogCreate (objeto con los atributos definidos en esa clase)
 #recibe una sesión de base de datos inyectada por Depends(get_db)
@@ -78,4 +66,4 @@ async def create_log(   log: schemas.ApiLogCreate,    db: Session = Depends(get_
     return db_log
 
 
-    
+'''

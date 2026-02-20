@@ -2,16 +2,29 @@
 from kafka import KafkaProducer
 import json
 import os
+import time
 #se conecta al broker de Kafka en la dirección "kafka:9092" y se configura para serializar los mensajes a JSON antes de enviarlos
-KAFKA_BROKER= os.getenv("KAFKA_BROKER")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
-producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BROKER,
-    #la función value_serializer se encarga de convertir el mensaje a JSON y luego a bytes para enviarlo a Kafka
-    value_serializer=lambda v: json.dumps(v).encode("utf-8")
-)
+producer = None
+def get_producer():
+    global producer
+    if producer is not None:
+        return producer
+    while True:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers= os.getenv("KAFKA_BROKER"),
+                value_serializer=lambda v: json.dumps(v).encode("utf-8")
+            )
+            print("Conectado a Kafka exitosamente")
+            return producer
+        except Exception as e:
+            print(f"Kafka no disponible, reintentando en 5s... {e}")
+            time.sleep(5)
+
+producer = get_producer()
+
 
 #funcion encargada de mandar un evento (log) al topic "api_logs" de Kafka, recibe un diccionario con los datos del log
 #  y  lo envía utilizando el productor configurado previamente
 def publish_event(event: dict):
-    producer.send(KAFKA_TOPIC, event)
+    producer.send(os.getenv("KAFKA_TOPIC"), event)
