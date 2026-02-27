@@ -3,7 +3,7 @@ import time
 
 #importa Request de fastapi, representa la solicitud HTTP entrante
 
-from fastapi import Request , BackgroundTasks
+from fastapi import Request , BackgroundTasks, HTTPException
 from starlette.responses import JSONResponse
 from messaging.kafka_producer import publish_event
 from schemas import ApiLogCreate
@@ -14,9 +14,9 @@ funcion del middleware para registrar las solicitudes entrantes
 recibe la variable request de tipo request, esta se encarga de representar la solicitud HTTP entrante
 recibe call_next que es una funcion que procesa la solicitud y devuelve la respuesta 
 '''
-async def log_requests(request: Request, call_next , response_model= ApiLogCreate):
+async def log_requests(request: Request, call_next):
     #si la ruta de la solicitud está en las rutas excluidas, no se loguea ni mide tiempo solo siguie el flujo normal
-    if request.url.path in EXCLUDED_PATHS:
+    if any(request.url.path.startswith(path) for path in EXCLUDED_PATHS):
         return await call_next(request)
     start_time = time.time()
     #espera que siga el procesamiento de la solicitud, flujo normal
@@ -29,19 +29,24 @@ async def log_requests(request: Request, call_next , response_model= ApiLogCreat
         status_code = 500
         response = JSONResponse(  
             status_code=500,
-            content={"detail": "Internal Server Error"},
+            content={"detail": f"Internal Server Error: {str(e)}"},
         )
 
     #calcula el tiempo que tardo en procesarse la solicitud
     process_time = (time.time() - start_time) * 1000
 
-    #objeto con los datos del log que se guardara en la base de datos, se llena con los datos de la solicitud y el tiempo de respuesta
-    log_data = {
-    "endpoint": request.url.path,
-    "method": request.method,
-    "status_code": status_code,
-    "response_time": process_time 
-    }
-    publish_event(log_data)
+    #objeto con los datos del log que se guardara en la base de datos, se llena con los datos de la solicitud 
+    # y el tiempo de respuesta ademas sigue el esquema definido en ApiLogCreate para asegurar que los datos sean correctos
+    try:
+        log_data = ApiLogCreate(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=status_code,
+            response_time=process_time 
+        )
+    except Exception as e:
+        print(f"Error creating ApiLogCreate object: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al crear el log: {str(e)}")
+    publish_event(log_data.dict())
     #devuelve la respuesta procesada
     return response

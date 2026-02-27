@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
+
 #importa el middleware de logueo de solicitudes
 from middleware import log_requests
+
+from services.getLogs_Service import get_api_log
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
 
@@ -16,11 +19,27 @@ async def middleware(request: Request, call_next):
 
 
 #endpoint de salud para verificar que la API está funcionando
-@app.get("/health")
+@app.get("/health", tags=["HEALTH"], status_code=200)
 async def health():
     return {"status": "ok"}
 
 
+@app.get("/logs", tags=["LOGS"], status_code=200,
+ responses={
+    200: {"description": "Logs obtenidos exitosamente"},
+    404: {"description": "No hay logs registrados"},
+    500: {"description": "Error interno del servidor"}
+})
+async def get_logs():
+    try:
+        logs = get_api_log()
+        if not logs:
+            raise HTTPException(status_code=404, detail="No hay logs registrados")
+        return logs
+    except HTTPException:
+        raise  # deja pasar las HTTPException que lanzamos nosotros
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {str(e)}")
 
 
 
