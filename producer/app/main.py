@@ -6,7 +6,19 @@ from middleware import log_requests
 from services.getLogs_Service import get_api_log
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(title="API Monitor MVP")
+
+# agrega esto justo después de crear el app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 '''
 registra el middleware de logueo de solicitudes en la aplicación FastAPI
 basicamente le dice a fastapi que use el middleware log_requests para cada solicitud HTTP entrante
