@@ -2,8 +2,7 @@ from fastapi import FastAPI, Depends, Request, HTTPException
 
 #importa el middleware de logueo de solicitudes
 from middleware import log_requests
-
-from services.getLogs_Service import get_api_log
+from services.getLogs_Service import get_api_log, get_endpoint_stats
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
 from fastapi import FastAPI, Request
@@ -54,7 +53,22 @@ async def get_logs():
         raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {str(e)}")
 
 
-
+@app.get("/stats", tags=["STATS"], status_code=200,
+ responses={
+    200: {"description": "Estadísticas obtenidas exitosamente"},
+    404: {"description": "No hay estadísticas disponibles"},
+    500: {"description": "Error interno del servidor"}
+})
+async def get_stats():
+    try:
+        stats = get_endpoint_stats()
+        if not stats:
+            raise HTTPException(status_code=404, detail="No hay estadísticas disponibles")
+        return stats
+    except HTTPException:
+        raise  # deja pasar las HTTPException que lanzamos nosotros
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {str(e)}")
 
 
 
