@@ -7,11 +7,21 @@ function App() {
   const [stats, setStats] = useState([])
   const [UltActualizacion, setUltActualizacion] = useState(null)
   
+  //paginacion 
+  const [paginaActual, setPaginaActual] = useState(1)
+  const LOGS_POR_PAGINA = 10
+  const inicio = (paginaActual - 1) * LOGS_POR_PAGINA
+  const fin = inicio + LOGS_POR_PAGINA
+  const logsPaginados = logs.slice(inicio, fin)
+  const totalPaginas = Math.ceil(logs.length / LOGS_POR_PAGINA)
+
+
   const fethData = () => {
     fetch("http://localhost:8000/logs")
       .then(res => res.json())
       .then(data => {
         setLogs(data)
+        setPaginaActual(1)
         setUltActualizacion(new Date().toLocaleTimeString())
       })
       .catch(() => setError("Error al conectar con la API"))
@@ -28,7 +38,7 @@ function App() {
     fethData()
     const intervalo = setInterval (() => {
       fethData()
-    }, 10000) // Actualiza cada 5 segundos
+    }, 1000000) // Actualiza cada 1000 segundos (ajusta el tiempo según tus necesidades)
 
     return () => clearInterval(intervalo) // Limpia el intervalo al desmontar el componente
    }, [])
@@ -69,7 +79,29 @@ function App() {
         </tbody>
       </table>
 
-
+      <h2>Endpoints de riesgo</h2>
+      <table border="1" cellPadding="8" style={{ width: "100%", borderCollapse: "collapse", marginBottom: "2rem" }}>
+        <thead style={{ background: "#f0f0f0" }}>
+          <tr>
+            <th>Endpoint</th>
+            <th>Método</th>
+            <th>Hora</th>
+            <th>Visitas</th>
+            <th>Promedio (ms)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.filter(row => row.promedio_ms > 10).map((row, index) => (
+            <tr key={`${row.endpoint}-${row.method}-${index}`}>
+              <td>{row.endpoint}</td>
+              <td>{row.method}</td>
+              <td>{row.hora}</td>
+              <td>{row.total_visitas}</td>
+              <td>{row.promedio_ms}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
 
 
@@ -87,7 +119,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {logs.map(log => (
+          {logsPaginados.map(log => (
             <tr key={log.id} style={{ background: log.status_code >= 400 ? "#ffe0e0" : "white" }}>
               <td>{log.endpoint}</td>
               <td>{log.method}</td>
@@ -98,11 +130,27 @@ function App() {
           ))}
         </tbody>
       </table>
+<div style={{ display: "flex", gap: "1rem", alignItems: "center", marginTop: "1rem" }}>
+    <button
+        onClick={() => setPaginaActual(p => p - 1)}
+        disabled={paginaActual === 1}
+    >
+        Anterior
+    </button>
 
+    <span>Página {paginaActual} de {totalPaginas}</span>
+
+    <button
+        onClick={() => setPaginaActual(p => p + 1)}
+        disabled={paginaActual === totalPaginas}
+    >
+        Siguiente
+    </button>
+</div>
       {/* Gráfica de tiempos de respuesta */}
       <h2>Tiempos de respuesta por endpoint</h2>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={logs}>
+        <BarChart data={logsPaginados}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="endpoint" />
           <YAxis unit="ms" />

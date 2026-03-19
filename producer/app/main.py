@@ -5,12 +5,13 @@ from middleware import log_requests
 from services.getLogs_Service import get_api_log, get_endpoint_stats
 #inicializa la aplicación FastAPI con el título "API Monitor MVP"
 app = FastAPI(title="API Monitor MVP")
-from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="API Monitor MVP")
 
-# agrega esto justo después de crear el app
+# habilitamos cors para permitir que el frontend (que corre en localhost:3000) 
+# pueda hacer peticiones a esta API sin problemas de seguridad 
+# relacionados con el mismo origen (same-origin policy) que los navegadores aplican por defecto
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],

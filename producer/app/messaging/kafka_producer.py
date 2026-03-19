@@ -9,6 +9,8 @@ def get_producer():
     global producer
     if producer is not None:
         return producer
+    #creamos producer en un bloque try-except para manejar errores de conexión a Kafka,
+    #  si no se puede conectar, se espera 5 segundos y se vuelve a intentar hasta que se logre la conexión
     while True:
         try:
             producer = KafkaProducer(
